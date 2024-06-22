@@ -46,13 +46,16 @@ cpp과 c#으로 공부합니다.
    3. Weighted Directed Graph
    4. Weighted Undirected Graph
 
-7. Tree
-   1. General Tree
-   2. Binary Search Tree
-   3. B-Tree
-   4. Dictionary with Red-Black Tree
+7. Tree : 구현 방식이 매우 다양하여 동일한 인터페이스로 묶을 수 없다는 판단입니다. 각각의 구현을 가집니다.
+
+   1. Binary Tree : Add node as complete tree shape
+   2. Binary Search Tree : Linked Nodes
+   3. Priority Queue with Heap : [Priority, object] pair with linked list
+   4. B-Tree : Simple implementation with integer
    5. AVL Tree
-   6. Priority Queue with Heap
+   6. 2-3-4 Tree
+   7. Red-Black Tree
+
 
 
 구현 및 사용의 정확성을 우선시하는데 목적을 두어 의도치 않게 동작 수행시에 과하다 싶을 정도의 Exception을 발생시킵니다.
