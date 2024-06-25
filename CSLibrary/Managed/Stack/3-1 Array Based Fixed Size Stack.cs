@@ -18,12 +18,8 @@ public class FixedSizeStack<T> : IStack<T> where T : IEquatable<T>
         _top = -1;
     }
 
-    public int Count()
-    {
-        return _size;
-    }
-
-    public bool IsEmpty() => Count() == 0;
+    public int Count => _size;
+    public bool IsEmpty() => Count == 0;
 
     public T? Peek()
     {

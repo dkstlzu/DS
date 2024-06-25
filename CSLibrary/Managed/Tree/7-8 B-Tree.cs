@@ -1,14 +1,16 @@
 namespace CSLibrary;
 
-public class BTree<TOrder, TValue> where TOrder : IComparable<TOrder>
+public class BTree<TOrder, TValue> : SortedBTreeBase<TOrder, TValue> 
+    where TOrder : IComparable<TOrder> where TValue : IEquatable<TValue>
 {
     public int Degree { get; private set; }
+    public override int ChildrenCount => Degree;
     public int Capacity => Degree - 1;
+    
     public bool  IsLeafNode { get; private set; }
 
     private (TOrder, TValue?)?[] _keys;
-    public BTree<TOrder, TValue>? Parent { get; private set; }
-    private BTree<TOrder, TValue>?[] _children;
+    private ITree<TOrder, TValue>?[] _children;
 
     public BTree(int degree, bool isLeafNode = true)
     {
@@ -20,19 +22,59 @@ public class BTree<TOrder, TValue> where TOrder : IComparable<TOrder>
         Degree = degree;
 
         _keys = new (TOrder, TValue?)?[degree - 1];
-        _children = new BTree<TOrder, TValue>[degree ];
+        _children = new ITree<TOrder, TValue>[degree ];
         
         IsLeafNode = isLeafNode;
     }
+    
+    public override (TOrder, TValue?)? GetKey(int index)
+    {
+        if (index < 0 || index >= Capacity)
+        {
+            throw new IndexOutOfRangeException();
+        }
 
-    public BTree<TOrder, TValue> Add(TOrder order, TValue? value)
+        return _keys[index];
+    }
+
+    public override void SetKey(int index, (TOrder, TValue?) key)
+    {
+        if (index < 0 || index >= Capacity)
+        {
+            throw new IndexOutOfRangeException();
+        }
+
+        _keys[index] = key;
+    }
+
+    public override ITree<TOrder, TValue>? GetChild(int index)
+    {
+        if (index < 0 || index >= ChildrenCount)
+        {
+            throw new IndexOutOfRangeException();
+        }
+
+        return _children[index];
+    }
+
+    public override void SetChild(int index, ITree<TOrder, TValue>? child)
+    {
+        if (index < 0 || index >= ChildrenCount)
+        {
+            throw new IndexOutOfRangeException();
+        }
+
+        _children[index] = child;
+    }
+    
+    public override BTree<TOrder, TValue> Add(TOrder order, TValue? value)
     {
         BTree<TOrder, TValue> node = GetAddableNodeLocationOf(order);
         node.AddFromLeaf(order, value, null, null);
 
         while (node.Parent != null)
         {
-            node = node.Parent;
+            node = (BTree<TOrder, TValue>)node.Parent;
         }
 
         return node;
@@ -76,14 +118,14 @@ public class BTree<TOrder, TValue> where TOrder : IComparable<TOrder>
         return result;
     }
 
-    public BTree<TOrder, TValue> Remove(TOrder order, TValue? value)
+    public override ITree<TOrder, TValue> Remove(TOrder order)
     {
-        var node = GetNodeWith(order);
+        BTree<TOrder, TValue>? node = (BTree<TOrder, TValue>?)GetTree(order);
         node.RemoveOrder(order);
 
         while (node.Parent != null && node != this)
         {
-            node = node.Parent;
+            node = (BTree<TOrder, TValue>)node.Parent;
         }
 
         return node;
@@ -103,16 +145,17 @@ public class BTree<TOrder, TValue> where TOrder : IComparable<TOrder>
         }
     }
 
-    public TValue? GetValue(TOrder order)
+    public override ITree<TOrder, TValue>? GetTree(TOrder order)
     {
         if (TryGetSelfValue(order, out TValue? value))
         {
-            return value;
+            return this;
         }
 
-        return GetValidChild(order).GetValue(order);
+        return GetValidChild(order).GetTree(order);
     }
 
+    private bool SelfContains(TOrder order) => TryGetSelfValue(order, out var value);
     private bool TryGetSelfValue(TOrder order, out TValue? value)
     {
         foreach (var key in _keys)
@@ -128,41 +171,6 @@ public class BTree<TOrder, TValue> where TOrder : IComparable<TOrder>
 
         value = default;
         return false;
-    }
-
-    public bool Contains(TOrder order)
-    {
-        if (SelfContains(order))
-        {
-            return true;
-        }
-
-        return GetValidChild(order).Contains(order);
-    }
-
-    private bool SelfContains(TOrder order)
-    {
-        foreach (var key in _keys)
-        {
-            if (!key.HasValue) break;
-            
-            if (order.CompareTo(key.Value.Item1) == 0)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private BTree<TOrder, TValue> GetNodeWith(TOrder order)
-    {
-        if (SelfContains(order))
-        {
-            return this;
-        }
-
-        return GetValidChild(order).GetNodeWith(order);
     }
 
     private BTree<TOrder, TValue> GetAddableNodeLocationOf(TOrder order)
@@ -186,8 +194,9 @@ public class BTree<TOrder, TValue> where TOrder : IComparable<TOrder>
         {
             throw new InvalidOperationException();
         }
-        
-        for (int i = 0; i < Capacity; i++)
+
+        int i = 0;
+        for (; i < Capacity; i++)
         {
             if (!_keys[i].HasValue)
             {
@@ -196,14 +205,14 @@ public class BTree<TOrder, TValue> where TOrder : IComparable<TOrder>
 
             if (order.CompareTo(_keys[i]!.Value.Item1) < 0)
             {
-                return _children[i]!;
+                break;
             }
         }
 
-        return _children[^1]!;
+        return (BTree<TOrder, TValue>)_children[i]!;
     }
 
-    public int SelfCount()
+    public override int SelfCount()
     {
         int count = 0;
 
@@ -217,19 +226,22 @@ public class BTree<TOrder, TValue> where TOrder : IComparable<TOrder>
         return count;
     }
 
-    public int Count()
+    public override int Count
     {
-        int count = 0;
-
-        count += SelfCount();
-
-        foreach (BTree<TOrder,TValue>? child in _children)
+        get
         {
-            if (child == null) continue;
-            
-            count += child.Count();
-        }
+            int count = 0;
 
-        return count;
+            count += SelfCount();
+
+            foreach (var child in _children)
+            {
+                if (child == null) continue;
+            
+                count += child.Count;
+            }
+
+            return count;
+        }
     }
 }

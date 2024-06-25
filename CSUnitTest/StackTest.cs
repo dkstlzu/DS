@@ -50,7 +50,7 @@ public class StackTest
         for (int i = 0; i < PUSH_LOOP_COUNT; i++)
         {
             stack.Push(i);
-            Assert.That(stack.Count(), Is.EqualTo(i+1));
+            Assert.That(stack.Count, Is.EqualTo(i+1));
             Assert.That(stack.Peek(), Is.EqualTo(i));
             prints(stack.Peek());
         }
@@ -72,7 +72,7 @@ public class StackTest
         {
             var popped = stack.Pop();
             Assert.That(popped, Is.EqualTo(i));
-            Assert.That(stack.Count(), Is.EqualTo(i));
+            Assert.That(stack.Count, Is.EqualTo(i));
             prints(popped);
         }
         

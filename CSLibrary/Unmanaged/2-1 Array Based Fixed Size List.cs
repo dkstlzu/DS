@@ -108,12 +108,8 @@ public unsafe class ManualFixedList<T> : IList<T>, IDisposable where T : IEquata
         _size = 0;
     }
 
-    public int Count()
-    {
-        return _size;
-    }
-
-    public bool IsEmpty() => Count() == 0;
+    public int Count => _size;
+    public bool IsEmpty() => Count == 0;
 
     #endregion
     

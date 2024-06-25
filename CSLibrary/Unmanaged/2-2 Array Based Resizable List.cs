@@ -123,12 +123,8 @@ public unsafe class ManualResizableList<T> : IList<T>, IDisposable where T : IEq
         _size = 0;
     }
 
-    public int Count()
-    {
-        return _size;
-    }
-
-    public bool IsEmpty() => Count() == 0;
+    public int Count => _size;
+    public bool IsEmpty() => Count == 0;
 
     #endregion
 

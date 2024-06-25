@@ -81,8 +81,8 @@ public class AdjacencyListWeightedDirectedGraph<T> : IWeightedGraph<T>, IDirecte
         _vertexList.Clear();
     }
 
-    public int Count() => _vertexList.Count;
-    public bool IsEmpty() => Count() == 0;
+    public int Count => _vertexList.Count;
+    public bool IsEmpty() => Count == 0;
 
     public bool IsAdjacent(int vertexNumber1, int vertexNumber2)
     {

@@ -2,14 +2,18 @@ using System.Diagnostics;
 
 namespace CSLibrary;
 
-public class Tree23<TOrder, TValue> where TOrder : IComparable<TOrder>
+public class Tree23<TOrder, TValue> : SortedTreeBase<TOrder, TValue> 
+    where TOrder : IComparable<TOrder> where TValue : IEquatable<TValue>
 {
     public const int MAX_ELEMENT = 2;
     
     public (TOrder, TValue?)? SmallKey;
     public (TOrder, TValue?)? LargeKey;
 
-    public Tree23<TOrder, TValue>? Parent;
+    public new Tree23<TOrder, TValue>? Parent { get; protected set; }
+    
+    public override int ChildrenCount => 3;
+
     public Tree23<TOrder, TValue>? Left;
     public Tree23<TOrder, TValue>? Middle;
     /// <summary>
@@ -29,7 +33,47 @@ public class Tree23<TOrder, TValue> where TOrder : IComparable<TOrder>
         IsLeafNode = isLeafNode;
     }
 
-    public Tree23<TOrder, TValue> Add(TOrder order, TValue? value)
+    public override ITree<TOrder, TValue>? GetChild(int index)
+    {
+        if (index < 0 || index >= ChildrenCount)
+        {
+            throw new IndexOutOfRangeException();
+        }
+
+        if (index == 0)
+        {
+            return Left;
+        } else if (index == 1)
+        {
+            return Middle;
+        }
+        else
+        {
+            return Right;
+        }
+    }
+
+    public override void SetChild(int index, ITree<TOrder, TValue>? child)
+    {
+        if (index < 0 || index >= ChildrenCount)
+        {
+            throw new IndexOutOfRangeException();
+        }
+        
+        if (index == 0)
+        {
+            Left = (Tree23<TOrder, TValue>?)child;
+        } else if (index == 1)
+        {
+            Middle = (Tree23<TOrder, TValue>?)child;
+        }
+        else
+        {
+            Right = (Tree23<TOrder, TValue>?)child;
+        }
+    }
+
+    public override Tree23<TOrder, TValue> Add(TOrder order, TValue? value)
     {
         FindLeafNodeWith(order).AddFromLeaf(order, value, null, null);
 
@@ -174,9 +218,9 @@ public class Tree23<TOrder, TValue> where TOrder : IComparable<TOrder>
         throw new InvalidOperationException();
     }
 
-    public Tree23<TOrder, TValue> Remove(TOrder order)
+    public override Tree23<TOrder, TValue> Remove(TOrder order)
     {
-        var node = FindNodeWith(order);
+        Tree23<TOrder, TValue> node = (Tree23<TOrder, TValue>)GetTree(order);
 
         if (node.RemoveAndEmpty(order))
         {
@@ -194,6 +238,31 @@ public class Tree23<TOrder, TValue> where TOrder : IComparable<TOrder>
         }
 
         return node;
+    }
+
+    public override ITree<TOrder, TValue> GetTree(TOrder order)
+    {
+        int compare1 = SmallKey != null ? order.CompareTo(SmallKey.Value.Item1) : -1;
+        int compare2 = LargeKey != null ? order.CompareTo(LargeKey.Value.Item1) : -1;
+        
+        if (compare1 == 0 || compare2 == 0)
+        {
+            return this;
+        } else if (IsLeafNode)
+        {
+            throw new InvalidOperationException();
+        }
+        
+        if (compare1 < 0)
+        {
+            return Left!.GetTree(order);
+        } else if (compare2 < 0)
+        {
+            return Middle!.GetTree(order);
+        } else
+        {
+            return Right!.GetTree(order);
+        }
     }
 
     /// <returns>true when removed all elements</returns>
@@ -445,35 +514,9 @@ public class Tree23<TOrder, TValue> where TOrder : IComparable<TOrder>
             return Right!.FindLeafNodeWith(order);
         }
     }
-    
-    public Tree23<TOrder, TValue> FindNodeWith(TOrder order)
+    public override TValue? GetValue(TOrder order)
     {
-        int compare1 = SmallKey != null ? order.CompareTo(SmallKey.Value.Item1) : -1;
-        int compare2 = LargeKey != null ? order.CompareTo(LargeKey.Value.Item1) : -1;
-        
-        if (compare1 == 0 || compare2 == 0)
-        {
-            return this;
-        }
-
-        if (IsLeafNode)
-        {
-            throw new InvalidOperationException();
-        } else if (compare1 < 0)
-        {
-            return Left!.FindNodeWith(order);
-        } else if (compare2 < 0)
-        {
-            return Middle!.FindNodeWith(order);
-        } else
-        {
-            return Right!.FindNodeWith(order);
-        }
-    }
-    
-    public TValue? GetValue(TOrder order)
-    {
-        return FindNodeWith(order).GetSelfValue(order);
+        return ((Tree23<TOrder, TValue>)GetTree(order)).GetSelfValue(order);
     }
     
     public TValue? GetSelfValue(TOrder order)
@@ -492,7 +535,7 @@ public class Tree23<TOrder, TValue> where TOrder : IComparable<TOrder>
         throw new InvalidOperationException();
     }
 
-    public void Clear()
+    public override void Clear()
     {
         SmallKey = null;
         LargeKey = null;
@@ -513,20 +556,70 @@ public class Tree23<TOrder, TValue> where TOrder : IComparable<TOrder>
         return count;
     }
     
-    public int Count()
+    public override int Count
     {
-        int count = 0;
+        get
+        {
+            int count = 0;
 
-        count += SelfCount();
-        count += Left?.Count() ?? 0;
-        count += Middle?.Count() ?? 0;
-        count += Right?.Count() ?? 0;
+            count += SelfCount();
+            count += Left?.Count() ?? 0;
+            count += Middle?.Count() ?? 0;
+            count += Right?.Count() ?? 0;
 
-        return count;
+            return count;
+        }
     }
 
-    public bool IsEmpty()
+    public override bool IsValidSorted()
     {
-        return Count() == 0;
+        TOrder? order = default;
+
+        return !Inorder((treeOrder, treeValue) =>
+        {
+            if (order == null)
+            {
+                order = treeOrder;
+            }
+            else
+            {
+                if (order.CompareTo(treeOrder) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+    }
+
+    public bool Inorder(Func<TOrder, TValue?, bool> action)
+    {
+        if (Left != null && Left.Inorder(action))
+        {
+            return true;
+        }
+
+        if (SmallKey != null && action(SmallKey.Value.Item1, SmallKey.Value.Item2))
+        {
+            return true;
+        }
+        
+        if (Middle != null && Middle.Inorder(action))
+        {
+            return true;
+        }
+        
+        if (LargeKey != null && action(LargeKey.Value.Item1, LargeKey.Value.Item2))
+        {
+            return true;
+        }
+        
+        if (Right != null && Right.Inorder(action))
+        {
+            return true;
+        }
+
+        return false;
     }
 }

@@ -3,6 +3,6 @@
 public interface ICollection
 {
     void Clear();
-    int Count();
+    int Count { get; }
     bool IsEmpty();
 }

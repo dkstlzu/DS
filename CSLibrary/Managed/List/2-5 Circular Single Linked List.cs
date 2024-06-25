@@ -22,10 +22,7 @@ public class CircularSingleLinkedList<T> : IList<T> where T : IEquatable<T>
         _size = 0;
     }
 
-    public int Count()
-    {
-        return _size;
-    }
+    public int Count => _size;
 
     public T? At(int index)
     {

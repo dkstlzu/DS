@@ -1,198 +1,151 @@
 namespace CSLibrary;
 
-public class CompleteBinaryTree<T> where T : IEquatable<T>
+public class CompleteBinaryTree<T> : BinaryTreeBase<T, T> where T : IEquatable<T>, IComparable<T>
 {
-    public T? Value;
-    private int _count;
-    public CompleteBinaryTree<T>? Left { get; private set; }
-    public CompleteBinaryTree<T>? Right { get; private set; }
+    public override int ChildrenCount { get; } = 2;
 
     public CompleteBinaryTree()
     {
         
     }
-    
+
     public CompleteBinaryTree(T value)
     {
-        Add(value);
-    }
-
-    public CompleteBinaryTree<T>? GetRemoveTargetLeafNode()
-    {
-        return GetTree(_count);
+        Order = value;
+        Value = value;
+        Count = 1;
     }
     
-    private CompleteBinaryTree<T>? GetTree(int elementNumber)
+    public CompleteBinaryTree<T>? GetRemoveTargetLeafNode()
     {
-        CompleteBinaryTree<T> tree = this;
-
-        foreach (var right in FindWayTo(elementNumber))
-        {
-            if (right)
-            {
-                if (tree.Right == null) return null;
-                tree = tree.Right;
-            }
-            else
-            {
-                if (tree.Left == null) return null;
-                tree = tree.Left;
-            }
-        }
-
-        return tree;
+        return (CompleteBinaryTree<T>?)GetTree(Count);
     }
 
-    private bool[] FindWayTo(int elementNumber)
+    public override ITree<T, T>? GetChild(int index)
     {
-        Stack<bool> toRight = new Stack<bool>();
-
-        while (elementNumber > 1)
-        {
-            toRight.Push(elementNumber % 2 == 1);
-            elementNumber /= 2;
-        }
-
-        return toRight.ToArray();
+        return index == 0 ? Left : Right;
     }
 
-    private bool RightToFind(int elementNumber)
+    public override void SetChild(int index, ITree<T, T>? child)
     {
-        bool toRight = false;
-        
-        while (elementNumber > 1)
+        if (index == 0)
         {
-            toRight = elementNumber % 2 == 1;
-            elementNumber /= 2;
+            Left = (CompleteBinaryTree<T>?)child;
         }
-
-        return toRight;
+        else
+        {
+            Right = (CompleteBinaryTree<T>?)child;
+        }
     }
 
+    public override ITree<T, T> Add(T order, T? value) => Add(order);
     public CompleteBinaryTree<T> Add(T value)
     {
         if (IsEmpty())
         {
+            Order = value;
             Value = value;
-            _count = 1;
-            Left = new CompleteBinaryTree<T>();
-            Right = new CompleteBinaryTree<T>();
+            Count = 1;
             return this;
         }
 
-        _count++;
+        Count++;
 
-        return RightToFind(_count) ? Right!.Add(value) : Left!.Add(value);
-    }
-
-    public void Remove(T value)
-    {
-        if (IsEmpty())
+        if (RightToFind(Count)!.Value)
         {
-            throw new InvalidOperationException();
-        }
-
-        var leaf = GetTree(_count);
-        
-        if (leaf == null)
-        {
-            throw new InvalidOperationException();
-        }
-        
-        Replace(value, this, leaf.Value!);
-
-        RemoveLastLeaf();
-
-        _removeFound = false;
-    }
-
-    private void RemoveLastLeaf()
-    {
-        var wayToLeaf = FindWayTo(_count);
-        var leafParent = GetTree(_count / 2);
-        var leaf = GetTree(_count);
-        var target = this;
-        _count--;
-
-        foreach (var right in wayToLeaf)
-        {
-            target = right ? target.Right : target.Left;
-
-            if (!target.IsEmpty())
+            if (Right == null)
             {
-                target._count--;
-            }
-        }
-        
-        if (leafParent != null)
-        {
-            if (leaf == leafParent.Right)
-            {
-                leafParent.Right = null;
+                Right = new CompleteBinaryTree<T>(value);
+                Right.Parent = this;
+                return (CompleteBinaryTree<T>)Right;
             }
             else
             {
-                leafParent.Left = null;
+                return ((CompleteBinaryTree<T>)Right).Add(value);
+            }
+        }
+        else
+        {
+            if (Left == null)
+            {
+                Left = new CompleteBinaryTree<T>(value);
+                Left.Parent = this;
+                return (CompleteBinaryTree<T>)Left;
+            }
+            else
+            {
+                return ((CompleteBinaryTree<T>)Left).Add(value);
             }
         }
     }
 
-    private static bool _removeFound = false;
-    
-    private static void Replace(T value, CompleteBinaryTree<T> tree, T replaceValue)
-    {
-        if (value.Equals(tree.Value))
-        {
-            _removeFound = true;
-            tree.Value = replaceValue;
-            return;
-        }
-        
-        if (tree.Left != null && !tree.Left.IsEmpty())
-            Replace(value, tree.Left, replaceValue);
-        
-        if (_removeFound) return;
-        
-        if (tree.Right != null && !tree.Right.IsEmpty())
-            Replace(value, tree.Right, replaceValue);
-    }
-    
-    public bool Contains(T value)
-    {
-        return TryFind(value, out CompleteBinaryTree<T>? node);
-    }
-
-    private bool TryFind(T value, out CompleteBinaryTree<T>? node)
+    public override ITree<T, T> Remove(T value)
     {
         if (IsEmpty())
         {
-            node = null;
-            return false;
-        }
-        
-        if (value.Equals(Value))
-        {
-            node = this;
-            return true;
+            throw new InvalidOperationException();
         }
 
-        if (Left!= null && !Left.IsEmpty() && Left!.TryFind(value, out node))
+        var leaf = GetTree(Count)!;
+
+        if (!Preorder((node) =>
+            {
+                if (value.Equals(node.Value))
+                {
+                    node.Value = leaf.Value;
+                    return true;
+                }
+
+                return false;
+            }))
         {
-            return true;
+            throw new InvalidOperationException();
         }
 
-        if (Right!= null && !Right.IsEmpty() && Right!.TryFind(value, out node))
+        var parent = (CompleteBinaryTree<T>?)leaf.Parent;
+
+        while (leaf != null)
         {
-            return true;
+            leaf.Count--;
+            leaf = (CompleteBinaryTree<T>?)leaf.Parent;
         }
 
-        node = null;
-        return false;
+        if (parent != null)
+        {
+            if (parent.Right != null)
+            {
+                parent.Right = null;
+            }
+            else
+            {
+                parent.Left = null;
+            }
+        }
+
+        return this;
     }
 
-    public int Height()
+    public override ITree<T, T>? GetTree(T value)
     {
-        int i = _count;
+        ITree<T, T>? result = null;
+        
+        Preorder((t) =>
+        {
+            if (!IsEmpty() && value.Equals(t.Value))
+            {
+                result = t;
+                return true;
+            }
+            
+            return false;
+        });
+
+        return result;
+    }
+
+    public override int Height()
+    {
+        int i = Count;
         int height = 0;
         
         // Complete tree라는 가정
@@ -203,22 +156,5 @@ public class CompleteBinaryTree<T> where T : IEquatable<T>
         }
 
         return height;
-    }
-
-    public void Clear()
-    {
-        _count = 0;
-        Left = null;
-        Right = null;
-    }
-
-    public int Count()
-    {
-        return _count;
-    }
-
-    public bool IsEmpty()
-    {
-        return _count == 0;
     }
 }

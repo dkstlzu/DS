@@ -99,8 +99,8 @@ public class AdjacencyMatrixDirectedGraph<T> : IGraph<T>, IDirectedGraph<T>
         _size = 0;
     }
 
-    public int Count() => _size;
-    public bool IsEmpty() => Count() == 0;
+    public int Count => _size;
+    public bool IsEmpty() => Count == 0;
 
     public bool IsAdjacent(int vertexNumber1, int vertexNumber2)
     {

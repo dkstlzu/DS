@@ -37,12 +37,8 @@ public class ResizableStack<T> : IStack<T> where T : IEquatable<T>
         _top = -1;
     }
 
-    public int Count()
-    {
-        return _size;
-    }
-
-    public bool IsEmpty() => Count() == 0;
+    public int Count => _size;
+    public bool IsEmpty() => Count == 0;
 
     public T? Peek()
     {
@@ -73,7 +69,7 @@ public class ResizableStack<T> : IStack<T> where T : IEquatable<T>
     {
         if (_size >= _elements.Length)
         {
-            Resize(Count() * 2);
+            Resize(Count * 2);
         }
         
         _elements[++_top] = t;

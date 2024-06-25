@@ -50,9 +50,9 @@ public class QueueTest
         for (int i = 0; i < ENQUEUE_LOOP_COUNT; i++)
         {
             queue.Enqueue(i);
-            Assert.That(queue.Count(), Is.EqualTo(i+1));
+            Assert.That(queue.Count, Is.EqualTo(i+1));
             Assert.That(queue.Peek(), Is.EqualTo(0));
-            prints(queue.Count());
+            prints(queue.Count);
         }
         printl();
     }
@@ -72,7 +72,7 @@ public class QueueTest
         {
             var popped = queue.Dequeue();
             Assert.That(popped, Is.EqualTo(i));
-            Assert.That(queue.Count(), Is.EqualTo(DEQUEUE_LOOP_COUNT-1-i));
+            Assert.That(queue.Count, Is.EqualTo(DEQUEUE_LOOP_COUNT-1-i));
             prints(popped);
         }
         

@@ -1,6 +1,7 @@
 namespace CSLibrary;
 
-public class AVLTree<TOrder, TValue> where TOrder : IComparable<TOrder>
+public class AVLTree<TOrder, TValue>
+    where TOrder : IComparable<TOrder> where TValue : IEquatable<TValue>
 {
     private (TOrder, TValue?)?[] _elements;
     private int _capacity;

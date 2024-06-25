@@ -23,8 +23,8 @@ public class AdjacencyMatrixUndirectedGraph<T> : IGraph<T>
         _connected.Clear();
     }
 
-    public int Count() => _vertexValues.Count;
-    public bool IsEmpty() => Count() == 0;
+    public int Count => _vertexValues.Count;
+    public bool IsEmpty() => Count == 0;
 
     public bool IsAdjacent(int vertexNumber1, int vertexNumber2)
     {

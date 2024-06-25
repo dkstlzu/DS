@@ -56,12 +56,8 @@ public class DirectAccessHashTable<T> : IHashTable<T>
         _size = 0;
     }
 
-    public int Count()
-    {
-        return _size;
-    }
-
-    public bool IsEmpty() => Count() == 0;
+    public int Count => _size;
+    public bool IsEmpty() => Count == 0;
 
     public T? Get(int key)
     {

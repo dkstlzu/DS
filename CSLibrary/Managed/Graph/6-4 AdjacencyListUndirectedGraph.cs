@@ -21,8 +21,8 @@ public class AdjacencyListUndirectedGraph<T> : IGraph<T>
         _vertexList.Clear();
     }
 
-    public int Count() => _vertexList.Count;
-    public bool IsEmpty() => _vertexList.Count == 0;
+    public int Count => _vertexList.Count;
+    public bool IsEmpty() => Count == 0;
 
     public bool IsAdjacent(int vertex1, int vertex2)
     {

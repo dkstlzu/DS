@@ -1,165 +1,137 @@
+using System.Collections;
+
 namespace CSLibrary;
 
-public class BinarySearchTree<TOrder, TValue> where TOrder : IComparable<TOrder>
+public class BinarySearchTree<TOrder, TValue> : SortedBinaryTreeBase<TOrder, TValue> 
+    where TOrder : IComparable<TOrder> where TValue : IEquatable<TValue>
 {
-    public TOrder? Order { get; private set; }
-    public TValue? Value { get; private set; }
-    
-    public BinarySearchTree<TOrder, TValue>? Left { get; private set; }
-    public BinarySearchTree<TOrder, TValue>? Right { get; private set; }
-
-    private int _count;
-
-    public BinarySearchTree()
-    {
-        
-    }
-    
-    public BinarySearchTree(TOrder order, TValue? value)
-    {
-        Add(order, value);
-    }
-
-    public void Add(TOrder order, TValue? value)
+    public override ITree<TOrder, TValue> Add(TOrder order, TValue? value)
     {
         if (IsEmpty())
         {
             Order = order;
             Value = value;
-            _count = 1;
-            return;
+            Count = 1;
+            return this;
         }
 
-        if (order.Equals(Order))
+        int compare = order.CompareTo(Order);
+        
+        if (compare == 0)
         {
             throw new InvalidOperationException();
         }
 
-        _count++;
-        
-        if (order.CompareTo(Order) < 0)
-        {
-            if (Left == null)
-            {
-                Left = new BinarySearchTree<TOrder, TValue>(order, value);
-            }
-            
-            Left.Add(order, value);
-        } else if (order.CompareTo(Order) > 0)
-        {
-            if (Right == null)
-            {
-                Right = new BinarySearchTree<TOrder, TValue>(order, value);
-            }
-            
-            Right.Add(order, value);
-        }
-    }
-
-    public void Remove(TOrder order)
-    {
-        Remove(order, null);
-    }
-
-    private void Remove(TOrder order, BinarySearchTree<TOrder, TValue>? parent)
-    {
-        int compare = order.CompareTo(Order);
-        _count--;
+        Count++;
         
         if (compare < 0)
         {
-            Left.Remove(order, this);
-            return;
+            if (Left == null)
+            {
+                Left = new BinarySearchTree<TOrder, TValue>();
+                Left.Parent = this;
+            }
+            
+            return Left.Add(order, value);
+        }
+        else
+        {
+            if (Right == null)
+            {
+                Right = new BinarySearchTree<TOrder, TValue>();
+                Right.Parent = this;
+            }
+            
+            return Right.Add(order, value);
+        }
+    }
+
+    public override ITree<TOrder, TValue> Remove(TOrder order)
+    {
+        TryRemove(order);
+        return this;
+    }
+
+    private bool TryRemove(TOrder order)
+    {
+        int compare = order.CompareTo(Order);
+
+        if (compare == 0)
+        {
+            Count--;
+            
+            if (Right != null)
+            {
+                SwapWithNextBigNode();
+            }
+            else if (Left != null)
+            {
+                SwapWithPreviousSmallNode();
+            }
+            else
+            {
+                RemoveFromParent();
+            }
+            
+            return true;
+        }
+        
+        if (compare < 0)
+        {
+            var left = (BinarySearchTree<TOrder, TValue>?)Left;
+            if (left != null && left.TryRemove(order))
+            {
+                Count--;
+                return true;
+            }
         }
         
         if (compare > 0)
         {
-            Right.Remove(order, this);
-            return;
+            var right = (BinarySearchTree<TOrder, TValue>?)Right;
+            if (right != null && right.TryRemove(order))
+            {
+                Count--;
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void SwapWithNextBigNode()
+    {
+        BinaryTreeBase<TOrder, TValue> replace = (BinaryTreeBase<TOrder, TValue>)Right!; 
+        replace.Count--;
+
+        while (replace.Left != null)
+        {
+            replace = (BinarySearchTree<TOrder, TValue>)replace.Left;
+            replace.Count--;
         }
         
-        BinarySearchTree<TOrder, TValue>? replace = null; 
-        
-        if (Right != null)
-        {
-            // find the smallest bigger node
-            parent = this;
-            replace = Right;
-            replace._count--;
+        replace.RemoveFromParent();
+        Order = replace.Order;
+        Value = replace.Value;
+    }
 
-            while (replace.Left != null)
-            {
-                parent = replace;
-                replace = replace.Left;
-                replace._count--;
-            }
+    private void SwapWithPreviousSmallNode()
+    {
+        BinarySearchTree<TOrder, TValue>? replace = (BinarySearchTree<TOrder, TValue>)Left!; 
+        replace.Count--;
+
+        while (replace.Right != null)
+        {
+            replace = (BinarySearchTree<TOrder, TValue>)replace.Right;
+            replace.Count--;
+        }
             
-            parent.RemoveChild(replace.Order!);
-            Order = replace.Order;
-            Value = replace.Value;
-        }
-        else if (Left != null)
-        {
-            // if does not have bigger node, then find the biggest smaller node
-            parent = this;
-            replace = Left;
-            replace._count--;
-
-            while (replace.Right != null)
-            {
-                parent = replace;
-                replace = replace.Right;
-                replace._count--;
-            }
-            
-            parent.RemoveChild(replace.Order!);
-            Order = replace.Order;
-            Value = replace.Value;
-        }
-        else
-        {
-            // it is leaf node and delete target node
-            if (parent != null)
-            {
-                parent.RemoveChild(order);
-            }
-        }
+        replace.RemoveFromParent();
+        Order = replace.Order;
+        Value = replace.Value;
     }
 
-    private void RemoveChild(TOrder order)
-    {
-        if (Left != null)
-        {
-            if (order.Equals(Left.Order))
-            {
-                Left = null;
-                return;
-            }
-        }
-
-        if (Right != null)
-        {
-            if (order.Equals(Right.Order))
-            {
-                Right = null;
-                return;
-            }
-        }
-
-        throw new InvalidOperationException();
-    }
-
-    public bool Contains(TOrder order)
-    {
-        return GetTree(order) != null;
-    }
-
-    public TValue? GetValue(TOrder order)
-    {
-        return GetTree(order)!.Value;
-    }
-
-    public BinarySearchTree<TOrder, TValue>? GetTree(TOrder order)
+    public override ITree<TOrder, TValue>? GetTree(TOrder order)
     {
         int compare = order.CompareTo(Order);
         
@@ -168,56 +140,49 @@ public class BinarySearchTree<TOrder, TValue> where TOrder : IComparable<TOrder>
             return this;
         }
 
-        if (compare < 0)
+        return compare < 0 ? Left?.GetTree(order) : Right?.GetTree(order);
+    }
+
+    public override bool IsValidSorted()
+    {
+        TOrder? order = default;
+
+        return Inorder((tree) =>
         {
-            if (Left == null)
+            if (order == null)
             {
-                return null;
+                order = tree.Order;
             }
+            else
+            {
+                if (order.CompareTo(tree.Order) >= 0)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+    }
+
+    public override IEnumerator<ISortedTree<TOrder, TValue>> GetEnumerator()
+    {
+        return new Enumerator().Init(this);
+    }
+
+    class Enumerator : TreeEnumerator
+    {
+        public override TreeEnumerator Init(ISortedTree<TOrder, TValue> tree)
+        {
+            _current = tree;
+            _nodeList = new List<ISortedTree<TOrder, TValue>>();
             
-            return Left.GetTree(order);
-        } 
-        
-        // compare > 0
-        if (Right == null)
-        {
-            return null;
+            ((SortedBinaryTreeBase<TOrder, TValue>)tree).Inorder((node) =>
+            {
+                _nodeList.Add((SortedBinaryTreeBase<TOrder, TValue>)node);
+                return false;
+            });
+            return this;
         }
-
-        return Right.GetTree(order);
-    }
-
-    public int Height()
-    {
-        int height = 1;
-
-        if (Left != null)
-        {
-            height = Math.Max(height, Left.Height() + 1);
-        }
-
-        if (Right != null)
-        {
-            height = Math.Max(height, Right.Height() + 1);
-        }
-
-        return height;
-    }
-    
-    public void Clear()
-    {
-        Left = null;
-        Right = null;
-        _count = 0;
-    }
-
-    public int Count()
-    {
-        return _count;
-    }
-
-    public bool IsEmpty()
-    {
-        return _count == 0;
     }
 }
