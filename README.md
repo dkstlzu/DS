@@ -47,12 +47,12 @@ cpp과 c#으로 공부합니다.
    4. Weighted Undirected Graph
 
 7. Tree
-   1. General Tree
-   2. Binary Search Tree
-   3. B-Tree
-   4. Dictionary with Red-Black Tree
-   5. AVL Tree
-   6. Priority Queue with Heap
+   1. Binary Search Tree
+   2. B-Tree
+   3. Dictionary with Red-Black Tree
+   4. AVL Tree
+   5. Priority Queue with Heap
+   6. Binary Search Tree With Span
 
 
 구현 및 사용의 정확성을 우선시하는데 목적을 두어 의도치 않게 동작 수행시에 과하다 싶을 정도의 Exception을 발생시킵니다.
